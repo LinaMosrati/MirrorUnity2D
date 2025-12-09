@@ -8,20 +8,18 @@ public class ScoreManager : MonoBehaviour
     public static ScoreManager instance;
 
     public TMP_Text scoreText;
-    public TMP_Text levelPassedText; // Assign in Inspector
+    public TMP_Text levelPassedText;
     private int score = 0;
     private Vector3 originalScale;  
-    public GameObject winPanel; // <-- Add this
-
+    public GameObject winPanel;
 
     [Header("Level Settings")]
-    public int scoreToPass = 3; // Score needed to pass
-    public string nextLevelName = "Level2"; // Next scene name
+    public int scoreToPass = 3;
 
     [Header("Level Passed Animation Settings")]
-    public float fadeDuration = 0.5f; // Fade-in duration
-    public float popScale = 1.5f;     // Pop scale
-    public float displayTime = 1.5f;  // Time text stays before scene change
+    public float fadeDuration = 0.5f;
+    public float popScale = 1.5f;
+    public float displayTime = 1.5f;
 
     void Awake()
     {
@@ -44,17 +42,15 @@ public class ScoreManager : MonoBehaviour
         }
     }
 
-   public void AddScore(int amount)
-{
-    score += amount;
-    UpdateScoreText();
-    StartCoroutine(PopAnimation());
+    public void AddScore(int amount)
+    {
+        score += amount;
+        UpdateScoreText();
+        StartCoroutine(PopAnimation());
 
-    if (score >= scoreToPass)
-        DisplayWinPanel();
-}
-
-
+        if (score >= scoreToPass)
+            DisplayWinPanel();
+    }
 
     private void UpdateScoreText()
     {
@@ -68,18 +64,47 @@ public class ScoreManager : MonoBehaviour
         scoreText.transform.localScale = originalScale;
     }
 
-    // 🌟 Professional Level Passed Animation
+    // ✅ MÉTHODE CORRIGÉE - Utilise uniquement le LevelManager
+    private void DisplayWinPanel()
+    {
+        Debug.Log("=== 🎯 LEVEL COMPLETE ===");
+        Debug.Log("Score atteint : " + score + " / " + scoreToPass);
+        
+        // Afficher le panel de victoire
+        if (winPanel != null)
+        {
+            winPanel.SetActive(true);
+            Debug.Log("✅ Win Panel activé");
+        }
+        else
+        {
+            Debug.LogWarning("⚠️ Win Panel non assigné dans l'Inspector");
+        }
+
+        // Trouver et appeler le LevelManager
+        LevelManager levelManager = FindObjectOfType<LevelManager>();
+        
+        if (levelManager != null)
+        {
+            Debug.Log("✅ LevelManager trouvé ! Appel de OnLevelComplete()");
+            levelManager.OnLevelComplete();
+        }
+        else
+        {
+            Debug.LogError("❌ ERREUR : LevelManager non trouvé dans la scène !");
+            Debug.LogError("Assure-toi qu'il y a un GameObject avec le script LevelManager dans la scène.");
+        }
+    }
+
+    // ✅ ANIMATION OPTIONNELLE (si tu veux l'utiliser avant de charger la scène)
     private IEnumerator LevelPassedAnimation()
     {
         if (levelPassedText == null) yield break;
 
-        // Activate text
         levelPassedText.gameObject.SetActive(true);
-        // TMP Rich Text with stars
-     levelPassedText.text = "<gradient=#FFD700,#FFA500><b> LEVEL PASSED! </b></gradient>";
+        levelPassedText.text = "<gradient=#FFD700,#FFA500><b> LEVEL PASSED! </b></gradient>";
 
-
-        // Fade-in + Pop
+        // Animation d'apparition
         float t = 0f;
         Vector3 startScale = Vector3.zero;
         Vector3 targetScale = Vector3.one * popScale;
@@ -93,7 +118,7 @@ public class ScoreManager : MonoBehaviour
             yield return null;
         }
 
-        // Bounce back to normal scale
+        // Animation de stabilisation
         t = 0f;
         Vector3 normalScale = Vector3.one;
         while (t < 0.2f)
@@ -103,7 +128,7 @@ public class ScoreManager : MonoBehaviour
             yield return null;
         }
 
-        // Optional: subtle rotation for fun
+        // Animation de rotation
         float rotationTime = 0.5f;
         t = 0f;
         Quaternion startRot = Quaternion.Euler(0, 0, -5);
@@ -115,20 +140,24 @@ public class ScoreManager : MonoBehaviour
             yield return null;
         }
 
-        // Hold for display
         yield return new WaitForSeconds(displayTime);
 
-        // Fade out screen before loading next level
+        // Fade out avant de charger
         if (FadeManager.instance != null)
             yield return StartCoroutine(FadeManager.instance.FadeOut(1f));
-
-        // Load next level
-        SceneManager.LoadScene(nextLevelName);
     }
-    private void DisplayWinPanel()
-{
-    Time.timeScale = 0f; // pause game
-    winPanel.SetActive(true); // show panel
-}
 
+    // ✅ MÉTHODE UTILITAIRE pour tester le score (optionnel)
+    [ContextMenu("Test Add Score")]
+    private void TestAddScore()
+    {
+        AddScore(1);
+    }
+
+    [ContextMenu("Test Win Condition")]
+    private void TestWinCondition()
+    {
+        score = scoreToPass;
+        DisplayWinPanel();
+    }
 }
